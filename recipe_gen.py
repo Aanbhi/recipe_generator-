@@ -1,131 +1,119 @@
-recipes = [
-    {
-        "name": "Pasta Primavera",
-        "ingredients": {"pasta": 100, "vegetables": 200, "olive oil": 10, "garlic": 5},
-        "cuisine": "Italian",
-        "diet": {"vegetarian"},
-        "description": "A fresh pasta dish loaded with seasonal vegetables.",
-        "serving_size": 2,
-        "cooking_time": 30,  # in minutes
-        "nutrition": {"calories": 400}
-    },
-    {
-        "name": "Omelette",
-        "ingredients": {"eggs": 3, "cheese": 50, "vegetables": 100},
-        "cuisine": "Breakfast",
-        "diet": {"vegetarian", "gluten-free"},
-        "description": "A classic omelette filled with cheese and veggies.",
-        "serving_size": 1,
-        "cooking_time": 15,
-        "nutrition": {"calories": 300}
-    },
-    {
-        "name": "Vegetable Stir Fry",
-        "ingredients": {"vegetables": 300, "soy sauce": 20, "olive oil": 10},
-        "cuisine": "Chinese",
-        "diet": {"vegan", "gluten-free", "vegetarian"},
-        "description": "Quick and easy stir-fried vegetables.",
-        "serving_size": 2,
-        "cooking_time": 20,
-        "nutrition": {"calories": 250}
-    },
-    {
-        "name": "Chili",
-        "ingredients": {"beans": 200, "tomato": 150, "ground meat": 100, "spices": 10},
-        "cuisine": "American",
-        "diet": {"gluten-free"},
-        "description": "A hearty and spicy chili dish.",
-        "serving_size": 4,
-        "cooking_time": 40,
-        "nutrition": {"calories": 500}
-    },
-    {
-        "name": "Tacos",
-        "ingredients": {"tortillas": 4, "beans": 200, "cheese": 100, "vegetables": 150},
-        "cuisine": "Mexican",
-        "diet": {"vegetarian"},
-        "description": "Delicious tacos filled with beans and cheese.",
-        "serving_size": 2,
-        "cooking_time": 25,
-        "nutrition": {"calories": 350}
-    },
-    {
-        "name": "Guacamole",
-        "ingredients": {"avocado": 2, "tomato": 100, "onion": 50, "lime": 1},
-        "cuisine": "Mexican",
-        "diet": {"vegan", "gluten-free"},
-        "description": "A creamy avocado dip perfect for snacks.",
-        "serving_size": 4,
-        "cooking_time": 10,
-        "nutrition": {"calories": 200}
-    },
-]
+import tkinter as tk
+from tkinter import messagebox, ttk
+import requests
+from PIL import Image, ImageTk
+import io
 
-def adjust_ingredients(recipe, servings):
-    adjusted_ingredients = {}
-    for ingredient, amount in recipe["ingredients"].items():
-        adjusted_ingredients[ingredient] = amount * (servings / recipe["serving_size"])
-    return adjusted_ingredients
+# Spoonacular API setup (Replace 'YOUR_API_KEY' with your actual key)
+API_KEY = "c25f33a039f84132a0616d6737338feb"
+BASE_URL = "https://api.spoonacular.com/recipes/complexSearch"
 
-def suggest_recipes(available_ingredients, preferred_cuisines, dietary_restrictions, servings):
-    available_set = set(available_ingredients)
-    suggested_recipes = []
+# Function to call the Spoonacular API and fetch recipes
+def get_recipes(ingredients, diet=None, cuisine=None):
+    params = {
+        "apiKey": API_KEY,
+        "includeIngredients": ingredients,
+        "diet": diet,
+        "cuisine": cuisine,
+        "number": 3,  # Fetch 3 recipes
+        "addRecipeInformation": True
+    }
+
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("results", [])
+    else:
+        messagebox.showerror("Error", "Failed to fetch recipes!")
+        return []
+
+# Function to display recipe results
+def display_recipes(recipes):
+    for widget in result_frame.winfo_children():
+        widget.destroy()  # Clear previous results
+
+    if not recipes:
+        messagebox.showinfo("No Recipes Found", "No matching recipes found!")
+        return
 
     for recipe in recipes:
-        # Check if all ingredients are available
-        if recipe["ingredients"].keys() <= available_set:
-            # Check for dietary restrictions
-            if not recipe["diet"].isdisjoint(dietary_restrictions) or not dietary_restrictions:
-                # Check for preferred cuisines
-                if recipe["cuisine"] in preferred_cuisines or not preferred_cuisines:
-                    adjusted_ingredients = adjust_ingredients(recipe, servings)
-                    suggested_recipes.append({
-                        "name": recipe["name"],
-                        "description": recipe["description"],
-                        "adjusted_ingredients": adjusted_ingredients,
-                        "cuisine": recipe["cuisine"],
-                        "diet": recipe["diet"],
-                        "cooking_time": recipe["cooking_time"],
-                        "nutrition": recipe["nutrition"]
-                    })
+        recipe_frame = tk.Frame(result_frame, bd=2, relief="groove", padx=10, pady=5)
+        recipe_frame.pack(fill="x", padx=5, pady=5)
 
-    return suggested_recipes
+        title = tk.Label(recipe_frame, text=recipe["title"], font=("Arial", 14, "bold"))
+        title.pack(anchor="w")
 
-def main():
-    user_input = input("Enter up to 10 available ingredients, separated by commas: ")
-    available_ingredients = [ingredient.strip() for ingredient in user_input.split(",")]
+        img_url = recipe["image"]
+        try:
+            img_data = requests.get(img_url).content
+            img = Image.open(io.BytesIO(img_data))
+            img = img.resize((100, 100))
+            img = ImageTk.PhotoImage(img)
 
-    cuisines_input = input("Enter your preferred cuisines (comma-separated), or leave blank for all: ")
-    preferred_cuisines = [cuisine.strip() for cuisine in cuisines_input.split(",")] if cuisines_input else []
+            img_label = tk.Label(recipe_frame, image=img)
+            img_label.image = img  # Keep a reference to avoid garbage collection
+            img_label.pack(side="left", padx=10)
+        except Exception as e:
+            print("Image load failed:", e)
 
-    dietary_input = input("Enter your dietary restrictions (comma-separated), or leave blank for none: ")
-    dietary_restrictions = {diet.strip() for diet in dietary_input.split(",")} if dietary_input else set()
+        details = "Servings: {recipe.get('servings', 'N/A')} | Time: {recipe.get('readyInMinutes', 'N/A')} mins"
+        details_label = tk.Label(recipe_frame, text=details)
+        details_label.pack(anchor="w")
 
-    servings_input = input("Enter the number of servings you want: ")
-    servings = int(servings_input)
+        instructions = tk.Label(recipe_frame, text=recipe.get("sourceUrl", ""), fg="blue", cursor="hand2")
+        instructions.pack(anchor="w")
+        instructions.bind("<Button-1>", lambda e, url=recipe["sourceUrl"]: open_url(url))
 
-    suggestions = suggest_recipes(available_ingredients, preferred_cuisines, dietary_restrictions, servings)
+# Open recipe URL in browser
+def open_url(url):
+    import webbrowser
+    webbrowser.open(url)
 
-    if suggestions:
-        print("\nYou can make the following recipes:")
-        for recipe in suggestions:
-            print(f"\nRecipe: {recipe['name']}")
-            print(f"Cuisine: {recipe['cuisine']}")
-            print(f"Description: {recipe['description']}")
-            print(f"Cooking time: {recipe['cooking_time']} minutes")
-            print("Adjusted Ingredients:")
-            for ingredient, amount in recipe['adjusted_ingredients'].items():
-                print(f"- {ingredient}: {amount:.2f}")
-            print(f"Diet: {', '.join(recipe['diet'])}")
-            print(f"Nutritional Info: {recipe['nutrition']['calories']} calories")
-    else:
-        print("No recipes can be made with the given ingredients and preferences.")
+# Function to handle user input and fetch recipes
+def fetch_recipes():
+    ingredients = ingredient_entry.get()
+    if not ingredients:
+        messagebox.showwarning("Input Error", "Please enter at least one ingredient.")
+        return
 
-if __name__ == "__main__":
-    main()
+    diet = diet_combo.get()
+    cuisine = cuisine_combo.get()
+    recipes = get_recipes(ingredients, diet, cuisine)
+    display_recipes(recipes)
 
-# output 1
-# pasta, vegetables, olive oil, garlic,eggs, cheese,soy sauce,beans, tomato, ground meat
-# Italian, Chinese, Breakfast 
-# vegetarian
-# 3 
+# GUI Setup with Tkinter
+root = tk.Tk()
+root.title("AI-Powered Recipe Generator")
+root.geometry("600x600")
+
+# Input Section
+input_frame = tk.Frame(root, pady=10)
+input_frame.pack(padx=10, pady=10, fill="x")
+
+ingredient_label = tk.Label(input_frame, text="Enter Ingredients (comma-separated):")
+ingredient_label.pack(anchor="w")
+
+ingredient_entry = tk.Entry(input_frame, width=50)
+ingredient_entry.pack(anchor="w", pady=5)
+
+diet_label = tk.Label(input_frame, text="Select Diet (optional):")
+diet_label.pack(anchor="w")
+
+diet_combo = ttk.Combobox(input_frame, values=["", "Vegan", "Vegetarian", "Gluten Free", "Keto"])
+diet_combo.pack(anchor="w", pady=5)
+
+cuisine_label = tk.Label(input_frame, text="Select Cuisine (optional):")
+cuisine_label.pack(anchor="w")
+
+cuisine_combo = ttk.Combobox(input_frame, values=["", "Italian", "Chinese", "Indian", "Mexican"])
+cuisine_combo.pack(anchor="w", pady=5)
+
+fetch_button = tk.Button(input_frame, text="Get Recipes", command=fetch_recipes)
+fetch_button.pack(pady=10)
+
+# Result Section
+result_frame = tk.Frame(root, pady=10)
+result_frame.pack(padx=10, pady=10, fill="both", expand=True)
+
+# Run the application
+root.mainloop()
