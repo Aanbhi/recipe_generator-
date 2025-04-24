@@ -39,9 +39,9 @@ Note: tkinter is included with most Python installations.
 
 1. Clone the repository:
 
-git clone https://github.com/your-username/recipe-generator-tkinter.git
+git clone https://github.com/Aanbhi/recipe_generator.git
 
-cd recipe-generator-tkinter
+cd recipe_gen
 
 2. Replace the placeholder API key in the code:
 
@@ -51,14 +51,16 @@ API_KEY = "YOUR_API_KEY"  # Replace with your Spoonacular API key
 
 3. Run the application:
 
-python recipe_generator.py
+python recipe_gen.py
 
 
 📂 Project Structure
 
-├── recipe_generator.py    # Main GUI application code
+├── recipe_gen.py    # Main GUI application code
 
-├── README.md              # Project documentation
+├── README.md        # Project documentation
+
+├── requirements.txt    #Install the dependencies
 
 
 📸 Preview
