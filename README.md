@@ -60,6 +60,8 @@ FORMAT - 1
 
 
 recipe_app/
+
+
 ├── main.py                 # Entry point for GUI
 
 ├── api.py                 # Spoonacular API functions
