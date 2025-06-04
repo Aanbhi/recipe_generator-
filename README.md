@@ -53,15 +53,23 @@ API_KEY = "YOUR_API_KEY"  # Replace with your Spoonacular API key
 
 python recipe_gen.py
 
-
 📂 Project Structure
+
+FORMAT - 1
+
+recipe_app/
+├── main.py                 # Entry point for GUI
+├── api.py                 # Spoonacular API functions
+├── gui_utils.py           # GUI helper functions (image loading, recipe display)
+├── events.py              # Event handlers (button clicks, interactions)
+└── config.py              # Configuration like API keys and constants
+
+FORMAT - 2
 
 ├── recipe_gen.py    # Main GUI application code
 
 ├── README.md        # Project documentation
-
 ├── requirements.txt    #Install the dependencies
-
 
 📸 Preview
 
